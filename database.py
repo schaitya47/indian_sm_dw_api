@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
 
-    database_url: str = os.getenv('DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@localhost:5432/indian_sm_dw')
+    database_url: str = os.getenv('DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@34.41.114.97:5432/indian_sm_dw')
 
 settings = Settings()
 
