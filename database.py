@@ -2,22 +2,34 @@ import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.ext.asyncio import AsyncSession # Make sure AsyncSession is imported
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator
 
 class Settings(BaseSettings):
-
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
 
-    database_url: str = os.getenv('DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@34.41.114.97:5432/indian_sm_dw')
+    database_url: str = os.getenv('DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@host.docker.internal:5432/indian_sm_dw')
+    port: int = int(os.getenv('PORT', '8000'))
 
 settings = Settings()
 
 DATABASE_URL = settings.database_url
 
-print(DATABASE_URL)
+# Only print in development mode
+if os.getenv('DEBUG', 'true').lower() == 'true':
+    print(f"Database URL: {DATABASE_URL}")
+    print(f"Port: {settings.port}")
 
-engine = create_async_engine(DATABASE_URL, echo=True, future=True)
+# Configure engine with production-ready settings
+engine = create_async_engine(
+    DATABASE_URL, 
+    echo=os.getenv('DEBUG', 'true').lower() == 'true',  # Only echo in debug mode
+    future=True,
+    pool_size=5,  # Connection pool size
+    max_overflow=10,  # Max overflow connections
+    pool_pre_ping=True,  # Validate connections before use
+    pool_recycle=3600  # Recycle connections every hour
+)
 
 AsyncSessionLocal = sessionmaker(
     engine, class_=AsyncSession, expire_on_commit=False

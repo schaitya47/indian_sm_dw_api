@@ -1,0 +1,5 @@
+FastAPI
+uvicorn[standard]
+pydantic-settings
+sqlalchemy
+asyncpg
