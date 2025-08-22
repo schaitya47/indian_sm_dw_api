@@ -23,4 +23,5 @@ services:
 
 networks:
   mage-net:
-    external: true
+    external:
+      name: indian_sm_dw_mage-net
