@@ -8,7 +8,7 @@ from typing import AsyncGenerator
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
 
-    database_url: str = os.getenv('DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@host.docker.internal:5432/indian_sm_dw')
+    database_url: str = os.getenv('DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@mage-postgres:5432/indian_sm_dw')
     port: int = int(os.getenv('PORT', '8000'))
 
 settings = Settings()
