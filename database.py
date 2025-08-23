@@ -4,9 +4,17 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator
+from dotenv import load_dotenv
+
+# Load .env file into os.environ so os.getenv() can read it
+load_dotenv()
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
+    model_config = SettingsConfigDict(
+        env_file='.env', 
+        env_file_encoding='utf-8',
+        extra='ignore'  # Ignore extra fields in .env that aren't defined in the class
+    )
 
     database_url: str = os.getenv('DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@mage-postgres:5432/indian_sm_dw')
     port: int = int(os.getenv('PORT', '8000'))

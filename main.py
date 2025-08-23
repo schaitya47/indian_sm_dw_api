@@ -10,6 +10,7 @@ import models, schemas
 
 app = FastAPI()
 
+
 @app.get("/db-test")
 async def db_test(db: AsyncSession = Depends(get_db)):
     """Run a lightweight query to verify DB connectivity and dependency wiring."""
@@ -19,6 +20,27 @@ async def db_test(db: AsyncSession = Depends(get_db)):
     """
     value = result.scalar()
     return {"ok": True, "result": value}
+
+async def resolve_stock(db: AsyncSession, symbol: str) -> int:
+    """Resolve a stock symbol to stock_key or raise HTTPException(404).
+
+    Symbol matching is case-insensitive and strips whitespace.
+    """
+    res = await db.execute(select(models.DimStock.stock_key).where(models.DimStock.nk_symbol.ilike(symbol.strip())))
+    stock_key = res.scalar_one_or_none()
+    if not stock_key:
+        raise HTTPException(status_code=404, detail="Stock not found")
+    return stock_key
+
+async def resolve_stock_and_source(db: AsyncSession, symbol: str, source: str) -> tuple[int, int]:
+    """Resolve symbol -> stock_key and source -> source_key; raise 404 if either missing."""
+    stock_key = await resolve_stock(db, symbol)
+    res = await db.execute(select(models.DimSource.source_key).where(models.DimSource.source_name.ilike(source.strip())))
+    source_key = res.scalar_one_or_none()
+    if not source_key:
+        raise HTTPException(status_code=404, detail="Source not found")
+
+    return stock_key, source_key
 
 @app.get("/stocks-list", response_model=List[str])
 async def list_stocks(
@@ -119,34 +141,6 @@ async def list_sources(db: AsyncSession = Depends(get_db)):
     Sample URL: http://localhost:8000/sources
     """
     return rows
-
-
-def _resolve_symbol_and_source(db: AsyncSession, symbol: str, source: str):
-    """Helper to resolve stock_key and source_key; returns tuple(stock_key, source_key) or raises HTTPException."""
-    # kept for backward compatibility but not used; use the async helpers below instead.
-    return None
-
-
-async def resolve_stock(db: AsyncSession, symbol: str) -> int:
-    """Resolve a stock symbol to stock_key or raise HTTPException(404).
-
-    Symbol matching is case-insensitive and strips whitespace.
-    """
-    res = await db.execute(select(models.DimStock.stock_key).where(models.DimStock.nk_symbol.ilike(symbol.strip())))
-    stock_key = res.scalar_one_or_none()
-    if not stock_key:
-        raise HTTPException(status_code=404, detail="Stock not found")
-    return stock_key
-
-
-async def resolve_stock_and_source(db: AsyncSession, symbol: str, source: str) -> tuple[int, int]:
-    """Resolve symbol -> stock_key and source -> source_key; raise 404 if either missing."""
-    stock_key = await resolve_stock(db, symbol)
-    res = await db.execute(select(models.DimSource.source_key).where(models.DimSource.source_name.ilike(source.strip())))
-    source_key = res.scalar_one_or_none()
-    if not source_key:
-        raise HTTPException(status_code=404, detail="Source not found")
-    return stock_key, source_key
 
 
 @app.get("/stock-balance-sheet", response_model=List[schemas.BalanceSheetOut])
